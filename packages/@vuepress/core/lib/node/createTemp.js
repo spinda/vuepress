@@ -1,4 +1,9 @@
+const cryptoRandomString = require('crypto-random-string')
 const { fs, path, chalk, logger } = require('@vuepress/shared-utils')
+
+// Generate a unique file name whose presence in a temporary directory indicates
+// that the directory was initialized by this instance of VuePress.
+const shibbolethFileName = `.vuepress-${cryptoRandomString({ length: 16, type: 'hex' })}`
 
 /**
  * Create a dynamic temp utility context that allow to lanuch
@@ -17,10 +22,15 @@ module.exports = function createTemp (tempPath) {
     tempPath = path.resolve(tempPath)
   }
 
-  if (!fs.existsSync(tempPath)) {
-    fs.ensureDirSync(tempPath)
-  } else {
+  // Ensure the temporary directory exists and was initialized by this instance
+  // of VuePress, by checking for the presence of the shibboleth file. Avoid
+  // emptying the temporary directory if it was previously initialized by this
+  // instance of VuePress; otherwise, webpack-dev-server can lose track of the
+  // paths it's watching.
+  const shibbolethFilePath = path.join(tempPath, shibbolethFileName)
+  if (!fs.existsSync(shibbolethFilePath)) {
     fs.emptyDirSync(tempPath)
+    fs.writeFileSync(shibbolethFilePath, '')
   }
 
   logger.debug(`Temp directory: ${chalk.gray(tempPath)}`)
