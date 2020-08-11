@@ -100,6 +100,8 @@ module.exports = class DevProcess extends EventEmitter {
       ignoreInitial: true
     })
 
+    this.configWatcher.on('add', target => this.handleUpdate('add', target))
+    this.configWatcher.on('unlink', target => this.handleUpdate('unlink', target))
     this.configWatcher.on('change', target => this.handleUpdate('change', target))
   }
 
