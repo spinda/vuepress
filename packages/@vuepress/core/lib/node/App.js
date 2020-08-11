@@ -8,6 +8,7 @@ const createMarkdown = require('./createMarkdown')
 const loadConfig = require('./loadConfig')
 const loadTheme = require('./loadTheme')
 const { getCacheLoaderOptions } = require('./CacheLoader')
+const { serializeAsyncMethod } = require('./util')
 const {
   fs, path, logger, chalk, globby, sort,
   datatypes: { isFunction },
@@ -500,3 +501,5 @@ module.exports = class App {
     return this
   }
 }
+
+serializeAsyncMethod(module.exports.prototype, 'process')

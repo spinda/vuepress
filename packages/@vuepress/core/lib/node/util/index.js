@@ -67,3 +67,43 @@ exports.inferDate = function (frontmatter = {}, filename, dirname) {
     return null
   }
 }
+
+/**
+ * Serialize calls to an async method (which must take no arguments), such that
+ * only one call to the method executes at any given time. Attempts to call the
+ * method while it is already currently executing queue up until the current
+ * execution completes, at which point the method is executed again a single
+ * time (regardless of how many additional call attempts were queued).
+ *
+ * @param {object} prototype
+ * @param {string} methodName
+ */
+
+exports.serializeAsyncMethod = function (prototype, methodName) {
+  const currentRunPromiseSymbol = Symbol(`currentRunPromise:${methodName}`)
+  const nextRunPromiseSymbol = Symbol(`nextRunPromise:${methodName}`)
+
+  const method = prototype[methodName]
+  prototype[methodName] = function () {
+    const run = () => method.call(this)
+      .finally(() => {
+        this[currentRunPromiseSymbol] = this[nextRunPromiseSymbol]
+        this[nextRunPromiseSymbol] = null
+      })
+
+    if (!this[currentRunPromiseSymbol]) {
+      return (this[currentRunPromiseSymbol] = run())
+    }
+
+    if (!this[nextRunPromiseSymbol]) {
+      this[nextRunPromiseSymbol] = new Promise((resolve, reject) => {
+        this[currentRunPromiseSymbol].finally(() => {
+          resolve()
+        })
+      })
+        .then(run)
+    }
+
+    return this[nextRunPromiseSymbol]
+  }
+}
